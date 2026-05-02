@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Conti bancari (Hype Luca, Hype Mileidy, PostePay, Contanti)
+model Account {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  type         String        // hype | postepay | cash | other
+  iban         String?
+  ownerName    String?
+  color        String        @default("#059669")
+  active       Boolean       @default(true)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+}
+
+// Pilastri (buckets dell'allocazione)
+model Pilastro {
+  id             String        @id @default(cuid())
+  key            String        @unique
+  name           String
+  emoji          String
+  color          String
+  description    String?
+  monthlyBudget  Float
+  goalAmount     Float?
+  currentBalance Float         @default(0)
+  order          Int           @default(0)
+  active         Boolean       @default(true)
+  transactions   Transaction[]
+  allocations    Allocation[]
+  createdAt      DateTime      @default(now())
+}
+
+// Allocazioni mensili
+model Allocation {
+  id         String   @id @default(cuid())
+  pilastroId String
+  pilastro   Pilastro @relation(fields: [pilastroId], references: [id])
+  month      String
+  budgeted   Float
+  spent      Float    @default(0)
+  createdAt  DateTime @default(now())
+
+  @@unique([pilastroId, month])
+}
+
+// Transazioni
+model Transaction {
+  id                 String    @id @default(cuid())
+  accountId          String
+  account            Account   @relation(fields: [accountId], references: [id])
+  pilastroId         String?
+  pilastro           Pilastro? @relation(fields: [pilastroId], references: [id])
+  date               DateTime
+  bookedDate         DateTime?
+  type               String
+  merchant           String?
+  description        String
+  amount             Float
+  rawData            String?
+  isInternalTransfer Boolean   @default(false)
+  isDebtPayment      Boolean   @default(false)
+  isReceiptScanned   Boolean   @default(false)
+  receiptImageUrl    String?
+  notes              String?
+  manualCategory     Boolean   @default(false)
+  hashId             String    @unique
+  deleted            Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([accountId, date])
+  @@index([pilastroId])
+}
+
+// Regole categorizzazione automatica
+model CategoryRule {
+  id         String   @id @default(cuid())
+  pattern    String
+  matchField String   @default("merchant")
+  pilastroId String
+  priority   Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+// Piano debiti
+model DebtPlan {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  description  String?
+  startDate    DateTime
+  active       Boolean       @default(true)
+  installments Installment[]
+  createdAt    DateTime      @default(now())
+}
+
+model Installment {
+  id         String    @id @default(cuid())
+  debtPlanId String
+  debtPlan   DebtPlan  @relation(fields: [debtPlanId], references: [id])
+  month      String
+  creditor   String
+  amount     Float
+  paid       Boolean   @default(false)
+  paidDate   DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([debtPlanId, month, creditor])
+}
+
+// Obiettivi
+model Goal {
+  id                  String    @id @default(cuid())
+  name                String
+  emoji               String    @default("🎯")
+  targetAmount        Float
+  currentAmount       Float     @default(0)
+  monthlyContribution Float     @default(0)
+  targetDate          DateTime?
+  startDate           DateTime  @default(now())
+  completed           Boolean   @default(false)
+  notes               String?
+  createdAt           DateTime  @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
