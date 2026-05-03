@@ -312,6 +312,30 @@ async function main() {
     await prisma.setting.upsert({ where: { key: s.key }, update: { value: s.value }, create: s });
   }
 
+  // Backfill sottocategorie sulle transazioni esistenti senza subcategoryId
+  const subcats = await prisma.subcategory.findMany({ include: { pilastro: true } });
+  // mappa: pilastroId:subcatKey → subcatId
+  const subcatMap = new Map(subcats.map((s) => [`${s.pilastroId}:${s.key}`, s.id]));
+
+  const txsWithoutSubcat = await prisma.transaction.findMany({
+    where: { subcategoryId: null, pilastroId: { not: null }, deleted: false },
+    select: { id: true, merchant: true, description: true, type: true, pilastroId: true },
+  });
+
+  let backfilled = 0;
+  for (const tx of txsWithoutSubcat) {
+    const { categorize } = await import("../src/lib/categorizer.js");
+    const result = categorize(tx.merchant ?? "", tx.description, tx.type);
+    if (result.subcategory && tx.pilastroId) {
+      const subcatId = subcatMap.get(`${tx.pilastroId}:${result.subcategory}`);
+      if (subcatId) {
+        await prisma.transaction.update({ where: { id: tx.id }, data: { subcategoryId: subcatId } });
+        backfilled++;
+      }
+    }
+  }
+  if (backfilled > 0) console.log(`  ✓ ${backfilled} transazioni con sottocategoria assegnata`);
+
   console.log("\n✨ Seed completato!");
   console.log(`\n📊 Riepilogo:`);
   console.log(`   - Pilastri: ${PILASTRI.length}`);
