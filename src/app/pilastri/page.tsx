@@ -1,32 +1,44 @@
-import { getPilastri, getMonthlyStats } from "@/lib/queries";
+import { getPilastri, getMonthlyStats, getAvailableMonths } from "@/lib/queries";
 import { Progress } from "@/components/ui/progress";
 import { formatEuro, formatMonth, currentMonth } from "@/lib/utils";
+import { MonthSelector } from "@/components/month-selector";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
 const SPESE_KEYS = ["fondamenta", "quotidiano", "figli", "amway", "debiti"];
 const CRESCITA_KEYS = ["scudo", "imprevisti", "respiro", "margine", "arretrati"];
 
-export default async function PilastriPage() {
-  const [pilastri, stats] = await Promise.all([getPilastri(), getMonthlyStats()]);
+export default async function PilastriPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  const { month: monthParam } = await searchParams;
+  const month = monthParam ?? currentMonth();
+
+  const [pilastri, stats, availableMonths] = await Promise.all([
+    getPilastri(),
+    getMonthlyStats(month),
+    getAvailableMonths(),
+  ]);
 
   const byKey = Object.fromEntries(pilastri.map((p) => [p.key, p]));
-
   const spese = SPESE_KEYS.map((k) => byKey[k]).filter(Boolean);
   const crescita = CRESCITA_KEYS.map((k) => byKey[k]).filter(Boolean);
-
-  const totalBudget = pilastri.reduce((s, p) => s + p.monthlyBudget, 0);
-  const totalSpent = Object.values(stats.byPilastro).reduce((s, p) => s + p.spent, 0);
 
   return (
     <div className="space-y-5">
       <header>
-        <p className="text-stone-500 text-sm capitalize">{formatMonth(currentMonth())}</p>
-        <h1 className="text-3xl font-bold text-stone-900 tracking-tight">I Pilastri</h1>
-        <p className="text-stone-600 text-sm mt-1">
-          {formatEuro(totalSpent)} di {formatEuro(totalBudget)} allocati questo mese.
-        </p>
+        <p className="text-stone-500 text-sm">Pilastri</p>
+        <h1 className="text-3xl font-bold text-stone-900 tracking-tight capitalize">
+          {formatMonth(month)}
+        </h1>
       </header>
+
+      <Suspense>
+        <MonthSelector selected={month} availableMonths={availableMonths} />
+      </Suspense>
 
       <div className="grid grid-cols-2 gap-3 items-start">
         {/* SINISTRA — Spese da governare */}

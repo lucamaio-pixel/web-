@@ -157,6 +157,19 @@ export async function getRecentTransactions(limit = 10) {
   });
 }
 
+export async function getAvailableMonths(): Promise<string[]> {
+  const txs = await prisma.transaction.findMany({
+    where: { deleted: false },
+    select: { date: true },
+  });
+  const months = new Set<string>();
+  for (const t of txs) {
+    const d = t.date;
+    months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+  return Array.from(months).sort();
+}
+
 export async function getGoals() {
   return prisma.goal.findMany({
     where: { completed: false },
