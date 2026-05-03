@@ -24,6 +24,17 @@ export default async function TransazioniPage({
     getAvailableMonths(),
   ]);
 
+  const pilastriWithSubs = await Promise.all(
+    pilastri.map(async (p) => ({
+      id: p.id, key: p.key, name: p.name, emoji: p.emoji,
+      subcategories: await prisma.subcategory.findMany({
+        where: { pilastroId: p.id, active: true },
+        orderBy: { order: "asc" },
+        select: { id: true, key: true, name: true, emoji: true },
+      }),
+    }))
+  );
+
   const pilastroId = pilastroFilter
     ? pilastri.find((p) => p.key === pilastroFilter)?.id
     : undefined;
@@ -91,10 +102,7 @@ export default async function TransazioniPage({
           {pilastroFilter ? "Nessun movimento per questo pilastro." : "Nessun movimento in questo mese."}
         </p>
       ) : (
-        <TransactionList
-          groups={groups}
-          pilastri={pilastri.map((p) => ({ id: p.id, key: p.key, name: p.name, emoji: p.emoji }))}
-        />
+        <TransactionList groups={groups} pilastri={pilastriWithSubs} />
       )}
     </div>
   );

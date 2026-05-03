@@ -5,9 +5,10 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { transactionId, pilastroId, saveRule } = await req.json() as {
+    const { transactionId, pilastroId, subcategoryId, saveRule } = await req.json() as {
       transactionId: string;
       pilastroId: string | null;
+      subcategoryId: string | null;
       saveRule: boolean;
     };
 
@@ -20,22 +21,20 @@ export async function POST(req: NextRequest) {
 
     await prisma.transaction.update({
       where: { id: transactionId },
-      data: { pilastroId },
+      data: { pilastroId, subcategoryId },
     });
 
     if (saveRule && pilastroId && tx.merchant) {
       const pattern = tx.merchant.toLowerCase().trim();
-      const existing = await prisma.categoryRule.findFirst({
-        where: { pattern, active: true },
-      });
+      const existing = await prisma.categoryRule.findFirst({ where: { pattern, active: true } });
       if (existing) {
         await prisma.categoryRule.update({
           where: { id: existing.id },
-          data: { pilastroId, priority: 200 },
+          data: { pilastroId, subcategoryId, priority: 200 },
         });
       } else {
         await prisma.categoryRule.create({
-          data: { pattern, matchField: "merchant", pilastroId, priority: 200 },
+          data: { pattern, matchField: "merchant", pilastroId, subcategoryId, priority: 200 },
         });
       }
     }
