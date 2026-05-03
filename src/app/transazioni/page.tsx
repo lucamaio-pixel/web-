@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { getAvailableMonths } from "@/lib/queries";
-import { Card } from "@/components/ui/card";
+import { getAvailableMonths, getPilastri } from "@/lib/queries";
 import { MonthSelector } from "@/components/month-selector";
+import { TransactionList } from "@/components/transaction-list";
 import { formatEuro, currentMonth } from "@/lib/utils";
 import { Suspense } from "react";
 
@@ -18,13 +18,14 @@ export default async function TransazioniPage({
   const from = new Date(y, m - 1, 1);
   const to = new Date(y, m, 1);
 
-  const [txs, availableMonths] = await Promise.all([
+  const [txs, availableMonths, pilastri] = await Promise.all([
     prisma.transaction.findMany({
       where: { deleted: false, date: { gte: from, lt: to } },
       orderBy: { date: "desc" },
       include: { account: true, pilastro: true },
     }),
     getAvailableMonths(),
+    getPilastri(),
   ]);
 
   // Raggruppa per giorno
@@ -34,6 +35,8 @@ export default async function TransazioniPage({
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(t);
   }
+
+  const groups = Array.from(byDay.entries()).map(([day, items]) => ({ day, items }));
 
   const totalIncome = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const totalExpenses = txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -73,51 +76,10 @@ export default async function TransazioniPage({
           Nessun movimento in questo mese.
         </p>
       ) : (
-        Array.from(byDay.entries()).map(([day, items]) => {
-          const dayDate = new Date(day + "T12:00:00");
-          const total = items.reduce((s, t) => s + t.amount, 0);
-          return (
-            <div key={day} className="space-y-2">
-              <div className="flex justify-between items-baseline px-1">
-                <h2 className="text-sm font-semibold text-stone-700 capitalize">
-                  {dayDate.toLocaleDateString("it-IT", {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "long",
-                  })}
-                </h2>
-                <span className="text-xs text-stone-500">
-                  {formatEuro(total, { sign: true })}
-                </span>
-              </div>
-              <Card>
-                <ul className="divide-y divide-stone-100">
-                  {items.map((t) => (
-                    <li key={t.id} className="px-4 py-3 flex justify-between items-center">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-stone-900 truncate">
-                          {t.merchant || t.description}
-                        </p>
-                        <p className="text-xs text-stone-500 mt-0.5">
-                          {t.pilastro?.emoji} {t.pilastro?.name ?? "—"} · {t.account.name}
-                          {t.isDebtPayment && " · 🏛️ debito"}
-                          {t.isInternalTransfer && " · ↔ interno"}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-sm font-semibold ml-3 ${
-                          t.amount < 0 ? "text-stone-900" : "text-emerald-600"
-                        }`}
-                      >
-                        {formatEuro(t.amount, { sign: true })}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </div>
-          );
-        })
+        <TransactionList
+          groups={groups}
+          pilastri={pilastri.map((p) => ({ id: p.id, key: p.key, name: p.name, emoji: p.emoji }))}
+        />
       )}
     </div>
   );

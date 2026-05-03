@@ -31,21 +31,44 @@ export async function POST(req: NextRequest) {
     const parsed = parseHypeCsv(csvContent);
     const stats = statsFromTransactions(parsed);
 
-    // Mappa Pilastri per chiave
+    // Mappa Pilastri per chiave e per id
     const pilastri = await prisma.pilastro.findMany();
     const pilastriByKey = new Map(pilastri.map((p) => [p.key, p]));
+    const pilastriById = new Map(pilastri.map((p) => [p.id, p]));
+
+    // Regole apprese dal DB (priorità massima)
+    const dbRules = await prisma.categoryRule.findMany({ where: { active: true } });
+
+    function applyDbRules(merchant: string, description: string): string | null {
+      const m = merchant.toLowerCase();
+      const d = description.toLowerCase();
+      let best: { pilastroId: string; priority: number } | null = null;
+      for (const rule of dbRules) {
+        const pat = rule.pattern.toLowerCase();
+        const hit =
+          rule.matchField === "merchant" ? m.includes(pat) :
+          rule.matchField === "description" ? d.includes(pat) :
+          m.includes(pat) || d.includes(pat);
+        if (hit && (!best || rule.priority > best.priority)) {
+          best = { pilastroId: rule.pilastroId, priority: rule.priority };
+        }
+      }
+      return best?.pilastroId ?? null;
+    }
 
     // Categorizza
     const enriched = parsed.map((t) => {
-      const cat = categorize(t.merchant, t.description, t.type);
-      const pilastro = pilastriByKey.get(cat.pilastro);
+      const dbMatch = applyDbRules(t.merchant, t.description);
+      const dbPilastro = dbMatch ? pilastriById.get(dbMatch) : null;
+      const cat = dbPilastro ? null : categorize(t.merchant, t.description, t.type);
+      const pilastro = dbPilastro ?? pilastriByKey.get(cat!.pilastro);
       return {
         ...t,
-        suggestedPilastro: cat.pilastro,
+        suggestedPilastro: dbPilastro ? dbPilastro.key : (cat?.pilastro ?? "margine"),
         pilastroId: pilastro?.id ?? null,
         pilastroName: pilastro?.name ?? "Non assegnato",
         pilastroEmoji: pilastro?.emoji ?? "❓",
-        ruleNote: cat.rule?.note,
+        ruleNote: dbPilastro ? "regola appresa" : cat?.rule?.note,
       };
     });
 
