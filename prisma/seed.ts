@@ -93,7 +93,7 @@ const PILASTRI = [
   },
   {
     key: "debiti",
-    name: "Piano Debito",
+    name: "Debiti/Mutuo",
     emoji: "🏛️",
     color: "#7C3AED",
     description: "Sentenza 21/2023 + Link Finanziaria (vedi modulo Piano Debiti)",
