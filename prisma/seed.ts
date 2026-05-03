@@ -132,6 +132,59 @@ const ACCOUNTS = [
   },
 ];
 
+// Sottocategorie per pilastro
+const SUBCATEGORIES: { pilastroKey: string; key: string; name: string; emoji: string; order: number }[] = [
+  // Fondamenta
+  { pilastroKey: "fondamenta", key: "rate_debito", name: "Rate debito", emoji: "🏛️", order: 1 },
+  { pilastroKey: "fondamenta", key: "luce_gas", name: "Luce/Gas", emoji: "💡", order: 2 },
+  { pilastroKey: "fondamenta", key: "internet_telefono", name: "Internet/Telefono", emoji: "📱", order: 3 },
+  { pilastroKey: "fondamenta", key: "abbonamenti", name: "Abbonamenti", emoji: "📺", order: 4 },
+  { pilastroKey: "fondamenta", key: "condominio", name: "Condominio", emoji: "🏢", order: 5 },
+  { pilastroKey: "fondamenta", key: "scuola_danza", name: "Scuola/Danza", emoji: "🎓", order: 6 },
+  { pilastroKey: "fondamenta", key: "altro_fondamenta", name: "Altro", emoji: "📋", order: 7 },
+  // Quotidiano
+  { pilastroKey: "quotidiano", key: "spesa", name: "Spesa", emoji: "🛒", order: 1 },
+  { pilastroKey: "quotidiano", key: "benzina", name: "Benzina", emoji: "⛽", order: 2 },
+  { pilastroKey: "quotidiano", key: "salute", name: "Salute/Farmacia", emoji: "💊", order: 3 },
+  { pilastroKey: "quotidiano", key: "parcheggi", name: "Parcheggi/Trasporti", emoji: "🚗", order: 4 },
+  { pilastroKey: "quotidiano", key: "bar_colazione", name: "Bar/Colazione", emoji: "☕", order: 5 },
+  { pilastroKey: "quotidiano", key: "altro_quotidiano", name: "Altro", emoji: "📋", order: 6 },
+  // Figli
+  { pilastroKey: "figli", key: "carlo", name: "Carlo", emoji: "👦", order: 1 },
+  { pilastroKey: "figli", key: "dalia", name: "Dalia", emoji: "👧", order: 2 },
+  { pilastroKey: "figli", key: "altro_figli", name: "Altro", emoji: "📋", order: 3 },
+  // Amway
+  { pilastroKey: "amway", key: "prodotti", name: "Prodotti Amway", emoji: "📦", order: 1 },
+  { pilastroKey: "amway", key: "network21", name: "Network21", emoji: "🌐", order: 2 },
+  { pilastroKey: "amway", key: "altro_amway", name: "Altro business", emoji: "📋", order: 3 },
+  // Debiti
+  { pilastroKey: "debiti", key: "link_finanziaria", name: "Link Finanziaria", emoji: "🏦", order: 1 },
+  { pilastroKey: "debiti", key: "comune_messina", name: "Comune Messina", emoji: "🏛️", order: 2 },
+  { pilastroKey: "debiti", key: "agenzia_entrate", name: "Agenzia Entrate", emoji: "📜", order: 3 },
+  { pilastroKey: "debiti", key: "banca_ifis", name: "Banca Ifis", emoji: "🏦", order: 4 },
+  // Imprevisti
+  { pilastroKey: "imprevisti", key: "gite_scolastiche", name: "Gite scolastiche", emoji: "🎒", order: 1 },
+  { pilastroKey: "imprevisti", key: "regali", name: "Regali", emoji: "🎁", order: 2 },
+  { pilastroKey: "imprevisti", key: "medico_extra", name: "Medico extra", emoji: "🏥", order: 3 },
+  { pilastroKey: "imprevisti", key: "altro_imprevisti", name: "Altro imprevisto", emoji: "⚡", order: 4 },
+  // Scudo
+  { pilastroKey: "scudo", key: "risparmio", name: "Risparmio emergenza", emoji: "🛡️", order: 1 },
+  // Respiro
+  { pilastroKey: "respiro", key: "ristoranti", name: "Ristoranti/Bar", emoji: "🍽️", order: 1 },
+  { pilastroKey: "respiro", key: "viaggi_gite", name: "Viaggi/Gite", emoji: "✈️", order: 2 },
+  { pilastroKey: "respiro", key: "svago", name: "Svago/Hobby", emoji: "🎭", order: 3 },
+  { pilastroKey: "respiro", key: "shopping_permesso", name: "Shopping permesso", emoji: "🛍️", order: 4 },
+  // Margine
+  { pilastroKey: "margine", key: "vestiti", name: "Vestiti", emoji: "👗", order: 1 },
+  { pilastroKey: "margine", key: "casa_piccole", name: "Casa piccole cose", emoji: "🔧", order: 2 },
+  { pilastroKey: "margine", key: "shopping_vario", name: "Shopping vario", emoji: "🛒", order: 3 },
+  { pilastroKey: "margine", key: "altro_margine", name: "Altro", emoji: "📋", order: 4 },
+  // Arretrati
+  { pilastroKey: "arretrati", key: "potatura", name: "Potatura", emoji: "🌳", order: 1 },
+  { pilastroKey: "arretrati", key: "bombole", name: "Bombole gas", emoji: "🫙", order: 2 },
+  { pilastroKey: "arretrati", key: "altro_arretrati", name: "Altro arretrato", emoji: "⏳", order: 3 },
+];
+
 // Piano debiti — generato dal foglio Google
 function buildDebtPlan() {
   const installments: { month: string; creditor: string; amount: number }[] = [];
@@ -193,6 +246,18 @@ async function main() {
     });
   }
   console.log(`  ✓ ${PILASTRI.length} Pilastri aggiornati`);
+
+  // Sottocategorie — upsert per non cancellare le transazioni
+  for (const s of SUBCATEGORIES) {
+    const pilastro = await prisma.pilastro.findUnique({ where: { key: s.pilastroKey } });
+    if (!pilastro) continue;
+    await prisma.subcategory.upsert({
+      where: { pilastroId_key: { pilastroId: pilastro.id, key: s.key } },
+      update: { name: s.name, emoji: s.emoji, order: s.order },
+      create: { pilastroId: pilastro.id, key: s.key, name: s.name, emoji: s.emoji, order: s.order },
+    });
+  }
+  console.log(`  ✓ ${SUBCATEGORIES.length} Sottocategorie aggiornate`);
 
   // Conti — upsert per non cancellare le transazioni
   for (const a of ACCOUNTS) {

@@ -49,7 +49,11 @@ export default async function PilastriPage({
           </div>
           {spese.map((p) => {
             const s = stats.byPilastro[p.id];
-            const merchants = Object.entries(s?.merchants ?? {}).map(([name, v]) => ({ name, ...v }));
+            const subcategoryGroups = Object.values(s?.subcategories ?? {}).map((sub) => ({
+              ...sub,
+              merchants: Object.entries(sub.merchants).map(([name, v]) => ({ name, ...v })),
+            }));
+            const ungrouped = Object.entries(s?.merchants ?? {}).map(([name, v]) => ({ name, ...v }));
             return (
               <PilastroCard
                 key={p.id}
@@ -58,7 +62,8 @@ export default async function PilastriPage({
                 emoji={p.emoji}
                 monthlyBudget={p.monthlyBudget}
                 spent={s?.spent ?? 0}
-                merchants={merchants}
+                subcategoryGroups={subcategoryGroups}
+                ungrouped={ungrouped}
                 isGrowth={false}
               />
             );
@@ -73,7 +78,11 @@ export default async function PilastriPage({
           </div>
           {crescita.map((p) => {
             const s = stats.byPilastro[p.id];
-            const merchants = Object.entries(s?.merchants ?? {}).map(([name, v]) => ({ name, ...v }));
+            const subcategoryGroups = Object.values(s?.subcategories ?? {}).map((sub) => ({
+              ...sub,
+              merchants: Object.entries(sub.merchants).map(([name, v]) => ({ name, ...v })),
+            }));
+            const ungrouped = Object.entries(s?.merchants ?? {}).map(([name, v]) => ({ name, ...v }));
             return (
               <PilastroCard
                 key={p.id}
@@ -82,7 +91,8 @@ export default async function PilastriPage({
                 emoji={p.emoji}
                 monthlyBudget={p.monthlyBudget}
                 spent={s?.spent ?? 0}
-                merchants={merchants}
+                subcategoryGroups={subcategoryGroups}
+                ungrouped={ungrouped}
                 isGrowth={true}
                 goalAmount={p.goalAmount}
               />

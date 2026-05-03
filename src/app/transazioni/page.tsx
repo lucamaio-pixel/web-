@@ -35,7 +35,7 @@ export default async function TransazioniPage({
       ...(pilastroId ? { pilastroId } : {}),
     },
     orderBy: { date: "desc" },
-    include: { account: true, pilastro: true },
+    include: { account: true, pilastro: true, subcategory: true },
   });
 
   const byDay = new Map<string, typeof txs>();

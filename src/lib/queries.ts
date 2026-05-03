@@ -45,15 +45,17 @@ export async function getMonthlyStats(month: string = currentMonth()) {
       deleted: false,
       isInternalTransfer: false,
     },
-    include: { pilastro: true },
+    include: { pilastro: true, subcategory: true },
   });
 
+  type SubcatEntry = { id: string; key: string; name: string; emoji: string; total: number; count: number; merchants: Record<string, { total: number; count: number }> };
   const byPilastro: Record<string, {
     spent: number;
     count: number;
     pilastroName: string;
     pilastroEmoji: string;
     merchants: Record<string, { total: number; count: number }>;
+    subcategories: Record<string, SubcatEntry>;
   }> = {};
   let totalIncome = 0;
   let totalExpenses = 0;
@@ -65,21 +67,43 @@ export async function getMonthlyStats(month: string = currentMonth()) {
     if (t.pilastroId && t.pilastro) {
       if (!byPilastro[t.pilastroId]) {
         byPilastro[t.pilastroId] = {
-          spent: 0,
-          count: 0,
+          spent: 0, count: 0,
           pilastroName: t.pilastro.name,
           pilastroEmoji: t.pilastro.emoji,
           merchants: {},
+          subcategories: {},
         };
       }
       if (t.amount < 0) {
-        byPilastro[t.pilastroId].spent += Math.abs(t.amount);
-        const key = t.merchant || t.description || "Altro";
-        if (!byPilastro[t.pilastroId].merchants[key]) {
-          byPilastro[t.pilastroId].merchants[key] = { total: 0, count: 0 };
+        const abs = Math.abs(t.amount);
+        byPilastro[t.pilastroId].spent += abs;
+        const merchantKey = t.merchant || t.description || "Altro";
+
+        if (t.subcategoryId && t.subcategory) {
+          const sid = t.subcategoryId;
+          if (!byPilastro[t.pilastroId].subcategories[sid]) {
+            byPilastro[t.pilastroId].subcategories[sid] = {
+              id: sid,
+              key: t.subcategory.key,
+              name: t.subcategory.name,
+              emoji: t.subcategory.emoji,
+              total: 0, count: 0,
+              merchants: {},
+            };
+          }
+          byPilastro[t.pilastroId].subcategories[sid].total += abs;
+          byPilastro[t.pilastroId].subcategories[sid].count++;
+          const sc = byPilastro[t.pilastroId].subcategories[sid].merchants;
+          if (!sc[merchantKey]) sc[merchantKey] = { total: 0, count: 0 };
+          sc[merchantKey].total += abs;
+          sc[merchantKey].count++;
+        } else {
+          if (!byPilastro[t.pilastroId].merchants[merchantKey]) {
+            byPilastro[t.pilastroId].merchants[merchantKey] = { total: 0, count: 0 };
+          }
+          byPilastro[t.pilastroId].merchants[merchantKey].total += abs;
+          byPilastro[t.pilastroId].merchants[merchantKey].count++;
         }
-        byPilastro[t.pilastroId].merchants[key].total += Math.abs(t.amount);
-        byPilastro[t.pilastroId].merchants[key].count++;
       }
       byPilastro[t.pilastroId].count++;
     }

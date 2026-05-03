@@ -23,6 +23,7 @@ interface Transaction {
   isInternalTransfer: boolean;
   account: { name: string };
   pilastro: { id: string; name: string; emoji: string } | null;
+  subcategory: { id: string; name: string; emoji: string } | null;
 }
 
 interface DayGroup {
@@ -84,9 +85,11 @@ export function TransactionList({
                         {t.merchant || t.description}
                       </p>
                       <p className="text-xs text-stone-500 mt-0.5">
-                        {t.pilastro?.emoji} {t.pilastro?.name ?? "—"} · {t.account.name}
-                        {t.isDebtPayment && " · 🏛️ debito"}
-                        {t.isInternalTransfer && " · ↔ interno"}
+                        {t.pilastro?.emoji} {t.pilastro?.name ?? "—"}
+                        {t.subcategory && <span className="text-stone-400"> › {t.subcategory.emoji} {t.subcategory.name}</span>}
+                        {" · "}{t.account.name}
+                        {t.isDebtPayment && " · 🏛️"}
+                        {t.isInternalTransfer && " · ↔"}
                       </p>
                     </div>
                     <span

@@ -34,8 +34,25 @@ model Pilastro {
   order          Int           @default(0)
   active         Boolean       @default(true)
   transactions   Transaction[]
+  subcategories  Subcategory[]
   allocations    Allocation[]
   createdAt      DateTime      @default(now())
+}
+
+// Sottocategorie per pilastro
+model Subcategory {
+  id           String        @id @default(cuid())
+  pilastroId   String
+  pilastro     Pilastro      @relation(fields: [pilastroId], references: [id])
+  key          String
+  name         String
+  emoji        String        @default("")
+  order        Int           @default(0)
+  active       Boolean       @default(true)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+
+  @@unique([pilastroId, key])
 }
 
 // Allocazioni mensili
@@ -57,7 +74,9 @@ model Transaction {
   accountId          String
   account            Account   @relation(fields: [accountId], references: [id])
   pilastroId         String?
-  pilastro           Pilastro? @relation(fields: [pilastroId], references: [id])
+  pilastro           Pilastro?     @relation(fields: [pilastroId], references: [id])
+  subcategoryId      String?
+  subcategory        Subcategory?  @relation(fields: [subcategoryId], references: [id])
   date               DateTime
   bookedDate         DateTime?
   type               String
@@ -82,13 +101,14 @@ model Transaction {
 
 // Regole categorizzazione automatica
 model CategoryRule {
-  id         String   @id @default(cuid())
-  pattern    String
-  matchField String   @default("merchant")
-  pilastroId String
-  priority   Int      @default(0)
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  pattern       String
+  matchField    String   @default("merchant")
+  pilastroId    String
+  subcategoryId String?
+  priority      Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
 }
 
 // Piano debiti
