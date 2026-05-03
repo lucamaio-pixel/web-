@@ -6,8 +6,8 @@ import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
-const SPESE_KEYS = ["fondamenta", "quotidiano", "figli", "amway", "debiti"];
-const CRESCITA_KEYS = ["scudo", "imprevisti", "respiro", "margine", "arretrati"];
+const SPESE_KEYS = ["fondamenta", "quotidiano", "figli", "amway", "debiti", "imprevisti"];
+const CRESCITA_KEYS = ["scudo", "respiro", "margine", "arretrati"];
 
 export default async function PilastriPage({
   searchParams,
