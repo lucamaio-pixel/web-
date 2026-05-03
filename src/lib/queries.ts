@@ -48,7 +48,13 @@ export async function getMonthlyStats(month: string = currentMonth()) {
     include: { pilastro: true },
   });
 
-  const byPilastro: Record<string, { spent: number; count: number; pilastroName: string; pilastroEmoji: string }> = {};
+  const byPilastro: Record<string, {
+    spent: number;
+    count: number;
+    pilastroName: string;
+    pilastroEmoji: string;
+    merchants: Record<string, { total: number; count: number }>;
+  }> = {};
   let totalIncome = 0;
   let totalExpenses = 0;
 
@@ -63,9 +69,18 @@ export async function getMonthlyStats(month: string = currentMonth()) {
           count: 0,
           pilastroName: t.pilastro.name,
           pilastroEmoji: t.pilastro.emoji,
+          merchants: {},
         };
       }
-      if (t.amount < 0) byPilastro[t.pilastroId].spent += Math.abs(t.amount);
+      if (t.amount < 0) {
+        byPilastro[t.pilastroId].spent += Math.abs(t.amount);
+        const key = t.merchant || t.description || "Altro";
+        if (!byPilastro[t.pilastroId].merchants[key]) {
+          byPilastro[t.pilastroId].merchants[key] = { total: 0, count: 0 };
+        }
+        byPilastro[t.pilastroId].merchants[key].total += Math.abs(t.amount);
+        byPilastro[t.pilastroId].merchants[key].count++;
+      }
       byPilastro[t.pilastroId].count++;
     }
   }

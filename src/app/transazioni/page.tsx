@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAvailableMonths, getPilastri } from "@/lib/queries";
 import { MonthSelector } from "@/components/month-selector";
+import { PilastroFilter } from "@/components/pilastro-filter";
 import { TransactionList } from "@/components/transaction-list";
 import { formatEuro, currentMonth } from "@/lib/utils";
 import { Suspense } from "react";
@@ -10,32 +11,39 @@ export const dynamic = "force-dynamic";
 export default async function TransazioniPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; pilastro?: string }>;
 }) {
-  const { month: monthParam } = await searchParams;
+  const { month: monthParam, pilastro: pilastroFilter } = await searchParams;
   const month = monthParam ?? currentMonth();
   const [y, m] = month.split("-").map(Number);
   const from = new Date(y, m - 1, 1);
   const to = new Date(y, m, 1);
 
-  const [txs, availableMonths, pilastri] = await Promise.all([
-    prisma.transaction.findMany({
-      where: { deleted: false, date: { gte: from, lt: to } },
-      orderBy: { date: "desc" },
-      include: { account: true, pilastro: true },
-    }),
-    getAvailableMonths(),
+  const [pilastri, availableMonths] = await Promise.all([
     getPilastri(),
+    getAvailableMonths(),
   ]);
 
-  // Raggruppa per giorno
+  const pilastroId = pilastroFilter
+    ? pilastri.find((p) => p.key === pilastroFilter)?.id
+    : undefined;
+
+  const txs = await prisma.transaction.findMany({
+    where: {
+      deleted: false,
+      date: { gte: from, lt: to },
+      ...(pilastroId ? { pilastroId } : {}),
+    },
+    orderBy: { date: "desc" },
+    include: { account: true, pilastro: true },
+  });
+
   const byDay = new Map<string, typeof txs>();
   for (const t of txs) {
     const key = t.date.toISOString().slice(0, 10);
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(t);
   }
-
   const groups = Array.from(byDay.entries()).map(([day, items]) => ({ day, items }));
 
   const totalIncome = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
@@ -50,6 +58,13 @@ export default async function TransazioniPage({
 
       <Suspense>
         <MonthSelector selected={month} availableMonths={availableMonths} />
+      </Suspense>
+
+      <Suspense>
+        <PilastroFilter
+          pilastri={pilastri.map((p) => ({ id: p.id, key: p.key, name: p.name, emoji: p.emoji }))}
+          selected={pilastroFilter ?? null}
+        />
       </Suspense>
 
       {txs.length > 0 && (
@@ -73,7 +88,7 @@ export default async function TransazioniPage({
 
       {txs.length === 0 ? (
         <p className="text-center text-stone-400 text-sm py-12">
-          Nessun movimento in questo mese.
+          {pilastroFilter ? "Nessun movimento per questo pilastro." : "Nessun movimento in questo mese."}
         </p>
       ) : (
         <TransactionList
