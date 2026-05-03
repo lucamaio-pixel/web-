@@ -176,85 +176,80 @@ function buildDebtPlan() {
 async function main() {
   console.log("🏛️  Seeding Pilastri database...");
 
-  // Pulisci esistenti
-  await prisma.installment.deleteMany();
-  await prisma.debtPlan.deleteMany();
-  await prisma.allocation.deleteMany();
-  await prisma.transaction.deleteMany();
-  await prisma.pilastro.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.categoryRule.deleteMany();
-  await prisma.goal.deleteMany();
-  await prisma.setting.deleteMany();
-
-  // Pilastri
+  // Pilastri — upsert per non cancellare le transazioni
   for (const p of PILASTRI) {
-    await prisma.pilastro.create({ data: p });
-  }
-  console.log(`  ✓ ${PILASTRI.length} Pilastri creati`);
-
-  // Conti
-  for (const a of ACCOUNTS) {
-    await prisma.account.create({ data: a });
-  }
-  console.log(`  ✓ ${ACCOUNTS.length} Conti creati`);
-
-  // Piano debiti
-  const debtPlan = await prisma.debtPlan.create({
-    data: {
-      name: "Sentenza 21/2023 - Tribunale Messina",
-      description: "Piano del consumatore: Link Finanziaria + creditori vari. Liberazione fase 1: luglio 2029.",
-      startDate: new Date(2024, 6, 1),
-    },
-  });
-
-  const installments = buildDebtPlan();
-  // Crea in chunk per evitare lentezza
-  const chunkSize = 100;
-  for (let i = 0; i < installments.length; i += chunkSize) {
-    const chunk = installments.slice(i, i + chunkSize);
-    await prisma.installment.createMany({
-      data: chunk.map((inst) => ({
-        debtPlanId: debtPlan.id,
-        ...inst,
-      })),
+    await prisma.pilastro.upsert({
+      where: { key: p.key },
+      update: {
+        name: p.name,
+        emoji: p.emoji,
+        color: p.color,
+        description: p.description,
+        monthlyBudget: p.monthlyBudget,
+        order: p.order,
+        ...(p.goalAmount ? { goalAmount: p.goalAmount } : {}),
+      },
+      create: p,
     });
   }
-  console.log(`  ✓ ${installments.length} rate del piano debiti generate`);
+  console.log(`  ✓ ${PILASTRI.length} Pilastri aggiornati`);
 
-  // Obiettivi iniziali
-  await prisma.goal.create({
-    data: {
-      name: "Interventi casa",
-      emoji: "🔨",
-      targetAmount: 1500,
-      monthlyContribution: 0,
-      notes: "Da attivare quando lo Scudo sarà al 50%",
-    },
-  });
-  await prisma.goal.create({
-    data: {
-      name: "Vacanza famiglia",
-      emoji: "✈️",
-      targetAmount: 1200,
-      monthlyContribution: 0,
-      notes: "Pianificare per estate 2027",
-    },
-  });
-  console.log(`  ✓ 2 Obiettivi creati`);
+  // Conti — upsert per non cancellare le transazioni
+  for (const a of ACCOUNTS) {
+    const existing = await prisma.account.findFirst({ where: { name: a.name } });
+    if (!existing) {
+      await prisma.account.create({ data: a });
+    }
+  }
+  console.log(`  ✓ Conti verificati`);
 
-  // Settings iniziali
-  await prisma.setting.create({ data: { key: "monthly_income_estimate", value: "2647" } });
-  await prisma.setting.create({ data: { key: "scudo_target", value: "3000" } });
-  await prisma.setting.create({ data: { key: "debt_plan_phase1_end", value: "2029-06" } });
-  await prisma.setting.create({ data: { key: "currency", value: "EUR" } });
-  await prisma.setting.create({ data: { key: "locale", value: "it-IT" } });
+  // Piano debiti — ricrea solo se non esiste già
+  const existingPlan = await prisma.debtPlan.findFirst();
+  if (existingPlan) {
+    console.log(`  ✓ Piano debiti già presente, skip`);
+  } else {
+    const debtPlan = await prisma.debtPlan.create({
+      data: {
+        name: "Sentenza 21/2023 - Tribunale Messina",
+        description: "Piano del consumatore: Link Finanziaria + creditori vari. Liberazione fase 1: luglio 2029.",
+        startDate: new Date(2024, 6, 1),
+      },
+    });
+
+    const installments = buildDebtPlan();
+    const chunkSize = 100;
+    for (let i = 0; i < installments.length; i += chunkSize) {
+      const chunk = installments.slice(i, i + chunkSize);
+      await prisma.installment.createMany({
+        data: chunk.map((inst) => ({ debtPlanId: debtPlan.id, ...inst })),
+      });
+    }
+    console.log(`  ✓ ${installments.length} rate del piano debiti generate`);
+
+    await prisma.goal.createMany({
+      data: [
+        { name: "Interventi casa", emoji: "🔨", targetAmount: 1500, monthlyContribution: 0, notes: "Da attivare quando lo Scudo sarà al 50%" },
+        { name: "Vacanza famiglia", emoji: "✈️", targetAmount: 1200, monthlyContribution: 0, notes: "Pianificare per estate 2027" },
+      ],
+    });
+    console.log(`  ✓ 2 Obiettivi creati`);
+  }
+
+  // Settings — upsert
+  const settings = [
+    { key: "monthly_income_estimate", value: "2647" },
+    { key: "scudo_target", value: "3000" },
+    { key: "debt_plan_phase1_end", value: "2029-06" },
+    { key: "currency", value: "EUR" },
+    { key: "locale", value: "it-IT" },
+  ];
+  for (const s of settings) {
+    await prisma.setting.upsert({ where: { key: s.key }, update: { value: s.value }, create: s });
+  }
 
   console.log("\n✨ Seed completato!");
   console.log(`\n📊 Riepilogo:`);
   console.log(`   - Pilastri: ${PILASTRI.length}`);
-  console.log(`   - Conti: ${ACCOUNTS.length}`);
-  console.log(`   - Rate piano debiti: ${installments.length}`);
   console.log(`   - Liberazione fase 1: luglio 2029 (-€145.58/mese)`);
   console.log(`   - Liberazione fase 2: luglio 2034 (-€21.62/mese)`);
   console.log(`   - Liberazione finale: ~2046 (-€293.21/mese)`);
