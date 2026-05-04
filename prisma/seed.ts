@@ -16,7 +16,7 @@ const PILASTRI = [
     emoji: "🏠",
     color: "#1E293B",
     description: "Bollette, abbonamenti, condominio, telefonia, scuola/danza — spese fisse ricorrenti di casa",
-    monthlyBudget: 376,
+    monthlyBudget: 348,
     order: 1,
   },
   {
@@ -25,7 +25,7 @@ const PILASTRI = [
     emoji: "🍎",
     color: "#10B981",
     description: "Cibo, benzina, salute, parcheggi",
-    monthlyBudget: 730,
+    monthlyBudget: 780,
     order: 2,
   },
   {
@@ -43,7 +43,7 @@ const PILASTRI = [
     emoji: "🚀",
     color: "#F59E0B",
     description: "Investimento business: Network21 e Amway Italia",
-    monthlyBudget: 250,
+    monthlyBudget: 80,
     order: 4,
   },
   {
@@ -52,7 +52,7 @@ const PILASTRI = [
     emoji: "🛡️",
     color: "#059669",
     description: "Cuscino emergenze (obiettivo €3.000 = 3 mesi spese essenziali)",
-    monthlyBudget: 150,
+    monthlyBudget: 50,
     goalAmount: 3000,
     order: 5,
   },
@@ -80,7 +80,7 @@ const PILASTRI = [
     emoji: "➕",
     color: "#64748B",
     description: "Vestiti, casa, prelievi contanti, tutto ciò che non rientra negli altri pilastri",
-    monthlyBudget: 114,
+    monthlyBudget: 50,
     order: 8,
   },
   {

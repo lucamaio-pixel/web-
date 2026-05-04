@@ -5,6 +5,12 @@ export async function getPilastri() {
   return prisma.pilastro.findMany({
     where: { active: true },
     orderBy: { order: "asc" },
+    include: {
+      subcategories: {
+        where: { active: true },
+        orderBy: { order: "asc" },
+      },
+    },
   });
 }
 
@@ -48,7 +54,7 @@ export async function getMonthlyStats(month: string = currentMonth()) {
     include: { pilastro: true, subcategory: true },
   });
 
-  type SubcatEntry = { id: string; key: string; name: string; emoji: string; total: number; count: number; merchants: Record<string, { total: number; count: number }> };
+  type SubcatEntry = { id: string; key: string; name: string; emoji: string; monthlyBudget: number; total: number; count: number; merchants: Record<string, { total: number; count: number }> };
   const byPilastro: Record<string, {
     spent: number;
     count: number;
@@ -87,6 +93,7 @@ export async function getMonthlyStats(month: string = currentMonth()) {
               key: t.subcategory.key,
               name: t.subcategory.name,
               emoji: t.subcategory.emoji,
+              monthlyBudget: t.subcategory.monthlyBudget,
               total: 0, count: 0,
               merchants: {},
             };

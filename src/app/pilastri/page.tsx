@@ -49,10 +49,21 @@ export default async function PilastriPage({
           </div>
           {spese.map((p) => {
             const s = stats.byPilastro[p.id];
-            const subcategoryGroups = Object.values(s?.subcategories ?? {}).map((sub) => ({
-              ...sub,
-              merchants: Object.entries(sub.merchants).map(([name, v]) => ({ name, ...v })),
-            }));
+            const usedSubs = s?.subcategories ?? {};
+            // Merge: TUTTE le sottocategorie del pilastro, anche quelle senza spese
+            const subcategoryGroups = p.subcategories.map((sub) => {
+              const used = usedSubs[sub.id];
+              return {
+                id: sub.id,
+                key: sub.key,
+                name: sub.name,
+                emoji: sub.emoji,
+                monthlyBudget: sub.monthlyBudget,
+                total: used?.total ?? 0,
+                count: used?.count ?? 0,
+                merchants: used ? Object.entries(used.merchants).map(([name, v]) => ({ name, ...v })) : [],
+              };
+            });
             const ungrouped = Object.entries(s?.merchants ?? {}).map(([name, v]) => ({ name, ...v }));
             return (
               <PilastroCard
@@ -78,10 +89,20 @@ export default async function PilastriPage({
           </div>
           {crescita.map((p) => {
             const s = stats.byPilastro[p.id];
-            const subcategoryGroups = Object.values(s?.subcategories ?? {}).map((sub) => ({
-              ...sub,
-              merchants: Object.entries(sub.merchants).map(([name, v]) => ({ name, ...v })),
-            }));
+            const usedSubs = s?.subcategories ?? {};
+            const subcategoryGroups = p.subcategories.map((sub) => {
+              const used = usedSubs[sub.id];
+              return {
+                id: sub.id,
+                key: sub.key,
+                name: sub.name,
+                emoji: sub.emoji,
+                monthlyBudget: sub.monthlyBudget,
+                total: used?.total ?? 0,
+                count: used?.count ?? 0,
+                merchants: used ? Object.entries(used.merchants).map(([name, v]) => ({ name, ...v })) : [],
+              };
+            });
             const ungrouped = Object.entries(s?.merchants ?? {}).map(([name, v]) => ({ name, ...v }));
             return (
               <PilastroCard

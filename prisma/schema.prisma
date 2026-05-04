@@ -41,16 +41,17 @@ model Pilastro {
 
 // Sottocategorie per pilastro
 model Subcategory {
-  id           String        @id @default(cuid())
-  pilastroId   String
-  pilastro     Pilastro      @relation(fields: [pilastroId], references: [id])
-  key          String
-  name         String
-  emoji        String        @default("")
-  order        Int           @default(0)
-  active       Boolean       @default(true)
-  transactions Transaction[]
-  createdAt    DateTime      @default(now())
+  id            String        @id @default(cuid())
+  pilastroId    String
+  pilastro      Pilastro      @relation(fields: [pilastroId], references: [id])
+  key           String
+  name          String
+  emoji         String        @default("")
+  monthlyBudget Float         @default(0)
+  order         Int           @default(0)
+  active        Boolean       @default(true)
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
 
   @@unique([pilastroId, key])
 }

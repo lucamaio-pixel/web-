@@ -10,6 +10,7 @@ interface SubcategoryGroup {
   key: string;
   name: string;
   emoji: string;
+  monthlyBudget: number;
   total: number;
   count: number;
   merchants: { name: string; total: number; count: number }[];
@@ -80,44 +81,58 @@ export function PilastroCard({
       {/* Sottocategorie — sempre visibili */}
       {hasDetail && (
         <div className="border-t border-stone-100 pt-2 space-y-2">
-          {subcategoryGroups.sort((a, b) => b.total - a.total).map((sub) => {
-            const subPercent = monthlyBudget > 0 ? (sub.total / monthlyBudget) * 100 : 0;
-            const subVariant: "success" | "warning" | "danger" =
-              isGrowth ? "success" : subPercent > 40 ? "warning" : "success";
-            return (
-              <div key={sub.key}>
-                <button
-                  className="w-full text-left"
-                  onClick={() => setOpenSub(openSub === sub.key ? null : sub.key)}
-                >
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-stone-700 font-medium flex items-center gap-1">
-                      {sub.emoji} {sub.name}
-                      {sub.count > 1 && <span className="text-stone-400">×{sub.count}</span>}
-                      {sub.merchants.length > 1 && (
-                        <ChevronDown className={`w-3 h-3 text-stone-300 transition-transform ${openSub === sub.key ? "rotate-180" : ""}`} />
-                      )}
-                    </span>
-                    <span className="font-semibold text-stone-800">{formatEuro(sub.total)}</span>
-                  </div>
-                  {/* Barra per sottocategoria */}
-                  <Progress value={Math.min(subPercent, 100)} variant={subVariant} className="h-1 mt-1" />
-                </button>
-                {openSub === sub.key && sub.merchants.length > 1 && (
-                  <div className="pl-3 space-y-0.5 mt-1">
-                    {sub.merchants.sort((a, b) => b.total - a.total).map((m) => (
-                      <div key={m.name} className="flex justify-between text-[10px]">
-                        <span className="text-stone-500 truncate max-w-[60%]">
-                          {m.name}{m.count > 1 && <span className="text-stone-400 ml-1">×{m.count}</span>}
-                        </span>
-                        <span className="text-stone-600">{formatEuro(m.total)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {subcategoryGroups
+            .filter((sub) => sub.monthlyBudget > 0 || sub.total > 0)
+            .sort((a, b) => (b.monthlyBudget || 0) - (a.monthlyBudget || 0))
+            .map((sub) => {
+              const subBudget = sub.monthlyBudget || 0;
+              const subPercent = subBudget > 0 ? (sub.total / subBudget) * 100 : (sub.total > 0 ? 100 : 0);
+              const subVariant: "success" | "warning" | "danger" =
+                isGrowth ? "success" : subPercent > 100 ? "danger" : subPercent > 80 ? "warning" : "success";
+              const subRemaining = subBudget - sub.total;
+              return (
+                <div key={sub.key}>
+                  <button
+                    className="w-full text-left"
+                    onClick={() => setOpenSub(openSub === sub.key ? null : sub.key)}
+                  >
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-stone-700 font-medium flex items-center gap-1 truncate">
+                        {sub.emoji} {sub.name}
+                        {sub.count > 1 && <span className="text-stone-400">×{sub.count}</span>}
+                        {sub.merchants.length > 1 && (
+                          <ChevronDown className={`w-3 h-3 text-stone-300 shrink-0 transition-transform ${openSub === sub.key ? "rotate-180" : ""}`} />
+                        )}
+                      </span>
+                      <span className={`font-semibold shrink-0 ml-1 ${subPercent > 100 ? "text-red-600" : "text-stone-800"}`}>
+                        {formatEuro(sub.total)}
+                        {subBudget > 0 && <span className="text-stone-400 font-normal">/{formatEuro(subBudget)}</span>}
+                      </span>
+                    </div>
+                    {subBudget > 0 && (
+                      <Progress value={Math.min(subPercent, 100)} variant={subVariant} className="h-1 mt-1" />
+                    )}
+                    {subBudget > 0 && (
+                      <p className={`text-[9px] mt-0.5 ${subRemaining < 0 ? "text-red-600 font-medium" : "text-stone-400"}`}>
+                        {subRemaining >= 0 ? `Rimangono ${formatEuro(subRemaining)}` : `Sforato di ${formatEuro(Math.abs(subRemaining))}`}
+                      </p>
+                    )}
+                  </button>
+                  {openSub === sub.key && sub.merchants.length > 1 && (
+                    <div className="pl-3 space-y-0.5 mt-1">
+                      {sub.merchants.sort((a, b) => b.total - a.total).map((m) => (
+                        <div key={m.name} className="flex justify-between text-[10px]">
+                          <span className="text-stone-500 truncate max-w-[60%]">
+                            {m.name}{m.count > 1 && <span className="text-stone-400 ml-1">×{m.count}</span>}
+                          </span>
+                          <span className="text-stone-600">{formatEuro(m.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
           {/* Transazioni senza sottocategoria */}
           {ungrouped.sort((a, b) => b.total - a.total).map((m) => (
