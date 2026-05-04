@@ -128,8 +128,11 @@ export async function POST(req: NextRequest) {
         });
         imported++;
       } catch (e: unknown) {
-        const err = e as { code?: string };
-        if (err.code === "P2002") skipped++;
+        const err = e as { code?: string; message?: string };
+        const isDuplicate =
+          err.code === "P2002" ||
+          (typeof err.message === "string" && err.message.includes("UNIQUE constraint failed"));
+        if (isDuplicate) skipped++;
         else throw e;
       }
     }
