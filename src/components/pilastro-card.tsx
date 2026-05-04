@@ -32,6 +32,7 @@ export function PilastroCard({
   name, emoji, monthlyBudget, spent,
   subcategoryGroups, ungrouped, isGrowth, goalAmount,
 }: Props) {
+  const [open, setOpen] = useState(true);
   const [openSub, setOpenSub] = useState<string | null>(null);
 
   const percent = monthlyBudget > 0 ? (spent / monthlyBudget) * 100 : 0;
@@ -39,12 +40,17 @@ export function PilastroCard({
   const variant: "success" | "warning" | "danger" =
     isGrowth ? "success" : percent > 100 ? "danger" : percent > 80 ? "warning" : "success";
 
-  const hasDetail = subcategoryGroups.length > 0 || ungrouped.length > 0;
+  const visibleSubcats = subcategoryGroups.filter((sub) => sub.monthlyBudget > 0 || sub.total > 0);
+  const hasDetail = visibleSubcats.length > 0 || ungrouped.length > 0;
 
   return (
     <div className={`rounded-xl border p-3 space-y-2 transition-colors ${isGrowth ? "bg-emerald-50 border-emerald-100" : "bg-white border-stone-200"}`}>
-      {/* Header pilastro */}
-      <div>
+      {/* Header pilastro — cliccabile per espandere/collassare */}
+      <button
+        type="button"
+        className="w-full text-left"
+        onClick={() => hasDetail && setOpen((v) => !v)}
+      >
         <div className="flex items-center gap-2">
           <span className="text-xl">{emoji}</span>
           <div className="min-w-0 flex-1">
@@ -53,6 +59,9 @@ export function PilastroCard({
               {formatEuro(monthlyBudget)}/m
             </p>
           </div>
+          {hasDetail && (
+            <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""} ${isGrowth ? "text-emerald-400" : "text-stone-300"}`} />
+          )}
         </div>
 
         {/* Barra totale pilastro */}
@@ -76,10 +85,10 @@ export function PilastroCard({
             Obiettivo: {formatEuro(goalAmount)}
           </p>
         )}
-      </div>
+      </button>
 
-      {/* Sottocategorie — sempre visibili */}
-      {hasDetail && (
+      {/* Sottocategorie — collassabili */}
+      {hasDetail && open && (
         <div className="border-t border-stone-100 pt-2 space-y-2">
           {subcategoryGroups
             .filter((sub) => sub.monthlyBudget > 0 || sub.total > 0)
