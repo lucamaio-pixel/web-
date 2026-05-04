@@ -159,7 +159,7 @@ export function TransactionList({ groups, pilastri }: { groups: DayGroup[]; pila
       {editing && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={close} />
-          <div className="relative bg-white rounded-t-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+          <div className="relative bg-white rounded-t-2xl p-5 pb-24 space-y-4 max-h-[80vh] overflow-y-auto">
 
             {/* Header */}
             <div className="flex justify-between items-start">
