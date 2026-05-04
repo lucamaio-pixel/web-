@@ -12,11 +12,11 @@ const prisma = new PrismaClient({ adapter });
 const PILASTRI = [
   {
     key: "fondamenta",
-    name: "Fondamenta",
+    name: "Spese Fisse Casa",
     emoji: "🏠",
     color: "#1E293B",
-    description: "Mutuo, bollette, abbonamenti, condominio, telefonia, danza Dalia",
-    monthlyBudget: 836,
+    description: "Bollette, abbonamenti, condominio, telefonia, scuola/danza — spese fisse ricorrenti di casa",
+    monthlyBudget: 376,
     order: 1,
   },
   {
