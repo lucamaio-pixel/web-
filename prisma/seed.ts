@@ -39,10 +39,10 @@ const PILASTRI = [
   },
   {
     key: "amway",
-    name: "Amway",
+    name: "Network21",
     emoji: "🚀",
     color: "#F59E0B",
-    description: "Investimento business: Amway Italia + Network21",
+    description: "Investimento business: Network21 e Amway Italia",
     monthlyBudget: 250,
     order: 4,
   },
