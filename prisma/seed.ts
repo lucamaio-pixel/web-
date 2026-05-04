@@ -21,7 +21,7 @@ const PILASTRI = [
   },
   {
     key: "quotidiano",
-    name: "Quotidiano",
+    name: "Spese Quotidiane",
     emoji: "🍎",
     color: "#10B981",
     description: "Cibo, benzina, salute, parcheggi",
