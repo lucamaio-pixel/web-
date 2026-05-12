@@ -156,3 +156,18 @@ model Setting {
   key   String @id
   value String
 }
+
+// Asset che generano reddito passivo (percorso libertà finanziaria)
+model Asset {
+  id            String   @id @default(cuid())
+  name          String
+  category      String   // immobile | business | investimento | altro
+  emoji         String   @default("💰")
+  monthlyIncome Float    @default(0)
+  currentValue  Float    @default(0)
+  notes         String?
+  active        Boolean  @default(true)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

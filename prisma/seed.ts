@@ -227,6 +227,36 @@ function buildDebtPlan() {
   return installments;
 }
 
+const ASSETS = [
+  {
+    name: "B&B",
+    category: "immobile",
+    emoji: "🏠",
+    monthlyIncome: 250,
+    currentValue: 0,
+    notes: "Reddito mensile costante da affitto B&B",
+    order: 1,
+  },
+  {
+    name: "Network21",
+    category: "business",
+    emoji: "🚀",
+    monthlyIncome: 0,
+    currentValue: 0,
+    notes: "Business in costruzione — obiettivo: royalties residuali",
+    order: 2,
+  },
+  {
+    name: "Interactive Brokers",
+    category: "investimento",
+    emoji: "📈",
+    monthlyIncome: 0,
+    currentValue: 0,
+    notes: "Conto investimento — da popolare progressivamente",
+    order: 3,
+  },
+];
+
 async function main() {
   console.log("🏛️  Seeding Pilastri database...");
 
@@ -300,6 +330,15 @@ async function main() {
     });
     console.log(`  ✓ 2 Obiettivi creati`);
   }
+
+  // Asset libertà finanziaria — upsert per nome
+  for (const a of ASSETS) {
+    const existing = await prisma.asset.findFirst({ where: { name: a.name } });
+    if (!existing) {
+      await prisma.asset.create({ data: a });
+    }
+  }
+  console.log(`  ✓ ${ASSETS.length} Asset verificati`);
 
   // Settings — upsert
   const settings = [

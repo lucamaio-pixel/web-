@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BarChart3, Plus, Receipt, Landmark } from "lucide-react";
+import { Home, BarChart3, Plus, Receipt, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -10,7 +10,7 @@ const links = [
   { href: "/pilastri", label: "Pilastri", icon: BarChart3 },
   { href: "/import", label: "Aggiungi", icon: Plus, primary: true },
   { href: "/transazioni", label: "Movimenti", icon: Receipt },
-  { href: "/debiti", label: "Debiti", icon: Landmark },
+  { href: "/liberta", label: "Libertà", icon: Flame },
 ];
 
 export function BottomNav() {

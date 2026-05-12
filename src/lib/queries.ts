@@ -223,6 +223,46 @@ export async function getGoals() {
   });
 }
 
+export async function getAssets() {
+  return prisma.asset.findMany({
+    where: { active: true },
+    orderBy: { order: "asc" },
+  });
+}
+
+export async function getLibertaStatus() {
+  const [assets, pilastri, debtStatus] = await Promise.all([
+    getAssets(),
+    prisma.pilastro.findMany({ where: { active: true } }),
+    getDebtPlanStatus(),
+  ]);
+
+  const totalAssetIncome = assets.reduce((s, a) => s + a.monthlyIncome, 0);
+  const totalAssetValue = assets.reduce((s, a) => s + a.currentValue, 0);
+  const monthlyExpenses = pilastri.reduce((s, p) => s + p.monthlyBudget, 0);
+
+  const coveragePercent = monthlyExpenses > 0 ? (totalAssetIncome / monthlyExpenses) * 100 : 0;
+
+  const totalDebt = debtStatus?.totalAmount ?? 0;
+  const remainingDebt = debtStatus?.remainingAmount ?? 0;
+  const debtPaidPercent = totalDebt > 0 ? ((totalDebt - remainingDebt) / totalDebt) * 100 : 0;
+
+  const netWorth = totalAssetValue - remainingDebt;
+
+  return {
+    assets,
+    totalAssetIncome,
+    totalAssetValue,
+    monthlyExpenses,
+    coveragePercent,
+    totalDebt,
+    remainingDebt,
+    debtPaidPercent,
+    netWorth,
+    debtStatus,
+  };
+}
+
 export async function getDataInfo() {
   const txCount = await prisma.transaction.count({ where: { deleted: false } });
   const lastTx = await prisma.transaction.findFirst({
