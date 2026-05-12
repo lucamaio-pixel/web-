@@ -3,6 +3,7 @@ import { formatEuro, formatMonth } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Flame, TrendingUp, TrendingDown, Landmark, Calendar, Sparkles } from "lucide-react";
+import { SetupButton } from "./setup-button";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +30,11 @@ export default async function LibertaPage() {
 
   const gapToFreedom = Math.max(0, monthlyExpenses - totalAssetIncome);
 
+  const needsSetup = assets.length === 0;
+
   return (
     <div className="space-y-6">
+      {needsSetup && <SetupButton />}
       <header>
         <div className="flex items-center gap-2 mb-2">
           <Flame className="w-5 h-5 text-orange-500" />

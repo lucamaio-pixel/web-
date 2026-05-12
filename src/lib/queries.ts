@@ -224,10 +224,15 @@ export async function getGoals() {
 }
 
 export async function getAssets() {
-  return prisma.asset.findMany({
-    where: { active: true },
-    orderBy: { order: "asc" },
-  });
+  try {
+    return await prisma.asset.findMany({
+      where: { active: true },
+      orderBy: { order: "asc" },
+    });
+  } catch {
+    // Tabella non ancora creata
+    return [];
+  }
 }
 
 export async function getLibertaStatus() {
