@@ -2,179 +2,182 @@ import {
   getPilastri,
   getMonthlyStats,
   getDebtPlanStatus,
-  getScudoStatus,
   getRecentTransactions,
-  getDataInfo,
   getAllBalances,
+  getLibertaStatus,
 } from "@/lib/queries";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { formatEuro, formatMonth, currentMonth } from "@/lib/utils";
 import Link from "next/link";
-import { Upload, Shield, ArrowRight, Sparkles, Landmark, FileText } from "lucide-react";
+import { Flame, TrendingDown, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [pilastri, stats, debt, scudo, recent, dataInfo, balances] = await Promise.all([
+  const [pilastri, stats, debt, recent, balances, liberta] = await Promise.all([
     getPilastri(),
     getMonthlyStats(),
     getDebtPlanStatus(),
-    getScudoStatus(),
-    getRecentTransactions(5),
-    getDataInfo(),
+    getRecentTransactions(3),
     getAllBalances(),
+    getLibertaStatus(),
   ]);
 
   const month = currentMonth();
   const totalBalance = balances.reduce((s, b) => s + b.balance, 0);
-  const isEmpty = dataInfo.txCount === 0;
+
+  const totalBudget = pilastri.reduce((s, p) => s + p.monthlyBudget, 0);
+  const totalSpent = Object.values(stats.byPilastro).reduce((s, p) => s + p.spent, 0);
+  const spentPercent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+  const pilastriInAllarme = pilastri.filter((p) => {
+    const spent = stats.byPilastro[p.id]?.spent ?? 0;
+    return p.monthlyBudget > 0 && spent / p.monthlyBudget > 0.8;
+  });
+  const tuttoOk = pilastriInAllarme.length === 0;
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-stone-500 text-sm capitalize">{formatMonth(month)}</p>
-        <h1 className="text-3xl font-bold text-stone-900 tracking-tight">Pilastri</h1>
-      </header>
+    <div className="space-y-4">
 
-      {isEmpty && <EmptyState />}
+      {/* Saldo */}
+      <div className="pt-2">
+        <p className="text-stone-400 text-sm capitalize">{formatMonth(month)}</p>
+        <div className="flex items-end justify-between mt-1">
+          <div>
+            <p className="text-xs text-stone-500 mb-0.5">Saldo disponibile</p>
+            <p className="text-4xl font-bold text-stone-900 tracking-tight">
+              {formatEuro(totalBalance)}
+            </p>
+          </div>
+          <div className="text-right space-y-0.5 pb-1">
+            {balances.map((b) => (
+              <div key={b.id} className="flex items-center gap-2 justify-end">
+                <span className="text-xs text-stone-400">{b.name}</span>
+                <span className="text-xs font-medium text-stone-600">{formatEuro(b.balance)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
+      {/* Spese mese */}
       <Card>
-        <CardContent className="pt-5">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-stone-500">Disponibile oggi</p>
-              <p className="text-3xl font-bold text-stone-900 mt-1">
-                {formatEuro(totalBalance)}
-              </p>
-            </div>
-            <div className="text-right text-xs text-stone-600 space-y-0.5">
-              {balances.map((b) => (
-                <div key={b.id} className="flex items-center gap-2 justify-end">
-                  <span className="text-stone-500">{b.name}</span>
-                  <span className="font-medium">{formatEuro(b.balance)}</span>
-                </div>
-              ))}
-            </div>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex justify-between items-baseline mb-2">
+            <p className="text-sm font-semibold text-stone-700">Spese questo mese</p>
+            <Link href="/pilastri" className="text-xs text-emerald-700 font-medium flex items-center gap-0.5">
+              Dettaglio <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <Progress
+            value={Math.min(spentPercent, 100)}
+            variant={spentPercent > 100 ? "danger" : spentPercent > 80 ? "warning" : "success"}
+            className="h-3"
+          />
+          <div className="flex justify-between text-xs mt-2">
+            <span className="font-semibold text-stone-800">{formatEuro(totalSpent)}</span>
+            <span className="text-stone-400">budget {formatEuro(totalBudget)}</span>
           </div>
         </CardContent>
       </Card>
 
-      {scudo && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-emerald-600" />
-                <CardTitle>Scudo Emergenze</CardTitle>
-              </div>
-              <span className="text-sm font-semibold text-emerald-700">
-                {Math.round(scudo.percent)}%
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Progress value={scudo.percent} className="h-3" />
-            <div className="flex justify-between text-sm mt-3">
-              <span className="text-stone-600">
-                <span className="font-semibold text-stone-900">{formatEuro(scudo.current)}</span>
-                <span className="text-stone-400"> / {formatEuro(scudo.target)}</span>
-              </span>
-              {scudo.monthsToGoal > 0 && (
-                <span className="text-stone-500">~{scudo.monthsToGoal} mesi all'obiettivo</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {debt && debt.nextLiberation && (
-        <Card className="bg-gradient-to-br from-violet-50 to-white border-violet-100">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-violet-600" />
-                <CardTitle>Piano Debito</CardTitle>
-              </div>
-              <Link
-                href="/debiti"
-                className="text-xs text-violet-700 font-medium hover:underline flex items-center gap-1"
-              >
-                Dettaglio <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Progress
-              value={debt.progressPercent}
-              barClassName="bg-violet-600"
-            />
-            <div className="flex justify-between text-xs text-stone-600">
-              <span>{debt.paidCount} rate pagate</span>
-              <span>{debt.remainingCount} rimanenti</span>
-            </div>
-            <div className="bg-violet-100/60 rounded-xl p-3 mt-2">
-              <div className="flex items-center gap-2 text-violet-900">
-                <Sparkles className="w-4 h-4" />
-                <p className="text-sm font-semibold">
-                  Prima liberazione: {formatMonth(debt.nextLiberation.month)}
-                </p>
-              </div>
-              <p className="text-xs text-violet-700 mt-1">
-                Mancano {debt.monthsToNextLiberation} mesi → {formatEuro(debt.nextLiberation.saved)}/mese liberi
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <section>
-        <div className="flex justify-between items-baseline mb-3">
-          <h2 className="text-lg font-semibold text-stone-900">I Pilastri</h2>
-          <Link href="/pilastri" className="text-xs text-emerald-700 font-medium hover:underline">
-            Tutti →
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {pilastri.slice(0, 6).map((p) => {
-            const spent = stats.byPilastro[p.id]?.spent ?? 0;
-            const percent = p.monthlyBudget > 0 ? (spent / p.monthlyBudget) * 100 : 0;
-            const variant: "success" | "warning" | "danger" =
-              percent > 100 ? "danger" : percent > 80 ? "warning" : "success";
-            return (
-              <Card key={p.id} className="p-4">
-                <div className="flex items-start justify-between">
-                  <span className="text-2xl">{p.emoji}</span>
-                  <span className="text-[10px] uppercase tracking-wide text-stone-400 font-medium">
-                    mese
+      {/* Pilastri in allarme */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">
+          Pilastri
+        </p>
+        {tuttoOk ? (
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
+            <span className="text-lg">✅</span>
+            <p className="text-sm font-medium text-emerald-800">Tutto nei limiti questo mese</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {pilastriInAllarme.map((p) => {
+              const spent = stats.byPilastro[p.id]?.spent ?? 0;
+              const percent = (spent / p.monthlyBudget) * 100;
+              const isOver = percent > 100;
+              return (
+                <div
+                  key={p.id}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                    isOver
+                      ? "bg-red-50 border-red-100"
+                      : "bg-amber-50 border-amber-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{p.emoji}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-stone-800">{p.name}</p>
+                      <p className="text-xs text-stone-500">
+                        {formatEuro(spent)} / {formatEuro(p.monthlyBudget)}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-sm font-bold ${
+                      isOver ? "text-red-600" : "text-amber-600"
+                    }`}
+                  >
+                    {Math.round(percent)}%
                   </span>
                 </div>
-                <p className="font-semibold text-stone-900 mt-2">{p.name}</p>
-                <div className="mt-2 space-y-1.5">
-                  <Progress value={percent} variant={variant} />
-                  <div className="flex justify-between text-xs">
-                    <span className="text-stone-600">{formatEuro(spent)}</span>
-                    <span className="text-stone-400">{formatEuro(p.monthlyBudget)}</span>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+            <Link href="/pilastri" className="block text-center text-xs text-stone-400 pt-1">
+              Vedi tutti i pilastri →
+            </Link>
+          </div>
+        )}
+      </div>
 
-      <section>
-        <div className="flex justify-between items-baseline mb-3">
-          <h2 className="text-lg font-semibold text-stone-900">Ultimi movimenti</h2>
+      {/* Libertà Finanziaria — mini */}
+      <Link href="/liberta">
+        <Card className="bg-gradient-to-br from-orange-50 to-white border-orange-100 active:scale-[0.99] transition-transform">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Flame className="w-4 h-4 text-orange-500" />
+                <p className="text-sm font-semibold text-stone-800">Libertà Finanziaria</p>
+              </div>
+              <span className="text-xs text-orange-600 font-bold">
+                {liberta.coveragePercent.toFixed(1)}%
+              </span>
+            </div>
+            <Progress
+              value={Math.min(liberta.coveragePercent, 100)}
+              barClassName="bg-orange-500"
+              className="h-2 mb-2"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-1 text-xs text-stone-500">
+                <TrendingDown className="w-3 h-3 text-violet-500" />
+                <span>Debito estinto {liberta.debtPaidPercent.toFixed(1)}%</span>
+              </div>
+              <span className="text-xs text-stone-400">
+                asset {formatEuro(liberta.totalAssetIncome)}/mese
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+
+      {/* Ultimi movimenti */}
+      <div>
+        <div className="flex justify-between items-baseline mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">
+            Ultimi movimenti
+          </p>
           <Link href="/transazioni" className="text-xs text-emerald-700 font-medium">
             Tutti →
           </Link>
         </div>
         {recent.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-stone-500 text-sm">
-              Nessun movimento. Importa il primo CSV per iniziare.
+            <CardContent className="py-6 text-center text-stone-400 text-sm">
+              Nessun movimento — importa un CSV per iniziare
             </CardContent>
           </Card>
         ) : (
@@ -186,16 +189,12 @@ export default async function DashboardPage() {
                     <p className="text-sm font-medium text-stone-900 truncate">
                       {t.merchant || t.description}
                     </p>
-                    <p className="text-xs text-stone-500 mt-0.5">
+                    <p className="text-xs text-stone-400 mt-0.5">
                       {t.pilastro?.emoji} {t.pilastro?.name ?? "Non categorizzato"} ·{" "}
                       {t.date.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
                     </p>
                   </div>
-                  <span
-                    className={`text-sm font-semibold ml-3 ${
-                      t.amount < 0 ? "text-stone-900" : "text-emerald-600"
-                    }`}
-                  >
+                  <span className={`text-sm font-semibold ml-3 ${t.amount < 0 ? "text-stone-800" : "text-emerald-600"}`}>
                     {formatEuro(t.amount, { sign: true })}
                   </span>
                 </li>
@@ -203,49 +202,8 @@ export default async function DashboardPage() {
             </ul>
           </Card>
         )}
-      </section>
+      </div>
 
-      <section className="grid grid-cols-2 gap-3">
-        <Link href="/import">
-          <Button variant="default" className="w-full" size="lg">
-            <Upload className="w-4 h-4" /> Importa CSV
-          </Button>
-        </Link>
-        <Link href="/report">
-          <Button variant="soft" className="w-full" size="lg">
-            <FileText className="w-4 h-4" /> Report Claude
-          </Button>
-        </Link>
-      </section>
-
-      {dataInfo.txCount > 0 && (
-        <p className="text-center text-xs text-stone-400 pt-4">
-          {dataInfo.txCount} transazioni · {dataInfo.months} mesi di storico ·{" "}
-          {stats.txCount} questo mese
-        </p>
-      )}
     </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
-      <CardContent className="py-8 text-center space-y-4">
-        <div className="text-5xl">🏛️</div>
-        <div>
-          <h2 className="font-semibold text-stone-900">Benvenuto nei Pilastri</h2>
-          <p className="text-sm text-stone-600 mt-1 max-w-sm mx-auto">
-            Il sistema è pronto. Importa il primo CSV di Hype per iniziare a vedere
-            la fotografia delle tue finanze.
-          </p>
-        </div>
-        <Link href="/import">
-          <Button>
-            <Upload className="w-4 h-4" /> Importa primo CSV
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
   );
 }
