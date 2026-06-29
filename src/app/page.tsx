@@ -1,31 +1,31 @@
 import {
   getPilastri,
   getMonthlyStats,
-  getDebtPlanStatus,
   getRecentTransactions,
-  getAllBalances,
+  getLiquidityStatus,
   getLibertaStatus,
 } from "@/lib/queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatEuro, formatMonth, currentMonth } from "@/lib/utils";
 import Link from "next/link";
-import { Flame, TrendingDown, ChevronRight } from "lucide-react";
+import { Flame, TrendingDown, ChevronRight, Shield, AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [pilastri, stats, debt, recent, balances, liberta] = await Promise.all([
+  const [pilastri, stats, recent, liquidity, liberta] = await Promise.all([
     getPilastri(),
     getMonthlyStats(),
-    getDebtPlanStatus(),
     getRecentTransactions(3),
-    getAllBalances(),
+    getLiquidityStatus(),
     getLibertaStatus(),
   ]);
 
   const month = currentMonth();
-  const totalBalance = balances.reduce((s, b) => s + b.balance, 0);
+  const balances = liquidity.balances;
+  const totalBalance = liquidity.total;
+  const cushion = liquidity.cushion;
 
   const totalBudget = pilastri.reduce((s, p) => s + p.monthlyBudget, 0);
   const totalSpent = Object.values(stats.byPilastro).reduce((s, p) => s + p.spent, 0);
@@ -60,6 +60,45 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Cuscino + disponibile operativo */}
+      {cushion && (
+        <Card className={cushion.belowFloor ? "border-red-200 bg-red-50/60" : "border-emerald-100 bg-emerald-50/40"}>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Shield className={`w-4 h-4 ${cushion.belowFloor ? "text-red-500" : "text-emerald-600"}`} />
+                <p className="text-sm font-semibold text-stone-700">Cuscino ({cushion.accountName})</p>
+              </div>
+              <span className={`text-sm font-bold ${cushion.belowFloor ? "text-red-600" : "text-emerald-700"}`}>
+                {formatEuro(cushion.balance)}
+              </span>
+            </div>
+            <Progress
+              value={Math.min(cushion.percentToTarget, 100)}
+              barClassName={cushion.belowFloor ? "bg-red-500" : "bg-emerald-500"}
+              className="h-2"
+            />
+            <div className="flex justify-between text-xs mt-1.5">
+              <span className="text-stone-400">obiettivo {formatEuro(cushion.target)}</span>
+              <span className="text-stone-400">minimo {formatEuro(cushion.floor)}</span>
+            </div>
+            {cushion.belowFloor ? (
+              <div className="flex items-start gap-1.5 mt-3 text-xs text-red-700">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                <span>
+                  Cuscino sotto il minimo. Da reintegrare: <strong>{formatEuro(cushion.target - cushion.balance)}</strong>.
+                </span>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-500 mt-3">
+                Disponibile senza toccare il cuscino:{" "}
+                <strong className="text-stone-700">{formatEuro(liquidity.operational)}</strong>
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Spese mese */}
       <Card>
@@ -113,6 +152,11 @@ export default async function DashboardPage() {
                       <p className="text-sm font-semibold text-stone-800">{p.name}</p>
                       <p className="text-xs text-stone-500">
                         {formatEuro(spent)} / {formatEuro(p.monthlyBudget)}
+                        {isOver && (
+                          <span className="text-red-600 font-medium">
+                            {" "}· +{formatEuro(spent - p.monthlyBudget)} oltre
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>

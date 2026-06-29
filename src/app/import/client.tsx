@@ -42,6 +42,8 @@ type ImportResult =
 
 export function ImportClient({ accounts }: { accounts: AccountSummary[] }) {
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+  const isPostePay = selectedAccount?.type === "postepay";
   const [csvContent, setCsvContent] = useState("");
   const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -187,7 +189,9 @@ export function ImportClient({ accounts }: { accounts: AccountSummary[] }) {
                   </span>
                 </label>
                 <p className="text-xs text-stone-500 mt-3">
-                  Formato Hype: app → Movimenti → Esporta CSV
+                  {isPostePay
+                    ? "Formato PostePay/BancoPosta: Lista Movimenti → Esporta CSV"
+                    : "Formato Hype: app → Movimenti → Esporta CSV"}
                 </p>
               </>
             )}

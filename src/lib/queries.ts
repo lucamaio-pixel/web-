@@ -182,6 +182,66 @@ export async function getDebtPlanStatus() {
   };
 }
 
+async function getSetting(key: string): Promise<string | null> {
+  const s = await prisma.setting.findUnique({ where: { key } });
+  return s?.value ?? null;
+}
+
+// Conto designato come cuscino: la PostePay
+export async function getCushionStatus() {
+  const account = await prisma.account.findFirst({
+    where: { active: true, OR: [{ type: "postepay" }, { name: "PostePay" }] },
+  });
+  if (!account) return null;
+
+  const balance = await getAccountBalance(account.id);
+  const target = Number(await getSetting("cushion_target")) || 1500;
+  const floor = Number(await getSetting("cushion_floor")) || 800;
+
+  return {
+    accountId: account.id,
+    accountName: account.name,
+    balance,
+    target,
+    floor,
+    belowFloor: balance < floor,
+    deficit: Math.max(0, target - balance),
+    percentToTarget: target > 0 ? (balance / target) * 100 : 0,
+  };
+}
+
+// Liquidità complessiva e "disponibile senza toccare il cuscino"
+export async function getLiquidityStatus() {
+  const balances = await getAllBalances();
+  const total = balances.reduce((s, b) => s + b.balance, 0);
+
+  const cushion = await getCushionStatus();
+  const cushionBalance = cushion?.balance ?? 0;
+  // liquidità operativa = tutto ciò che NON è cuscino
+  const operational = total - cushionBalance;
+
+  // prossime rate debito conosciute (mese corrente e successivo)
+  const now = currentMonth();
+  const [ny, nm] = now.split("-").map(Number);
+  const next = nm === 12 ? `${ny + 1}-01` : `${ny}-${String(nm + 1).padStart(2, "0")}`;
+  const plan = await prisma.debtPlan.findFirst({
+    where: { active: true },
+    include: { installments: true },
+  });
+  const sumMonth = (m: string) =>
+    (plan?.installments ?? []).filter((i) => i.month === m).reduce((s, i) => s + i.amount, 0);
+
+  return {
+    balances,
+    total,
+    cushionBalance,
+    operational,
+    cushion,
+    debtThisMonth: sumMonth(now),
+    debtNextMonth: sumMonth(next),
+  };
+}
+
 export async function getScudoStatus() {
   const scudo = await prisma.pilastro.findUnique({ where: { key: "scudo" } });
   if (!scudo) return null;

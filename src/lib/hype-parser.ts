@@ -27,7 +27,9 @@ export interface ParsedTransaction {
 
 const KNOWN_INTERNAL_PEERS = [
   "luca maio",
+  "maio luca",
   "mileidy pineda castillo",
+  "mileidy pineda",
 ];
 
 const DEBT_KEYWORDS = [
@@ -40,7 +42,7 @@ const DEBT_KEYWORDS = [
   "agenzia delle entrate",
 ];
 
-function parseDateIt(s: string): Date | null {
+export function parseDateIt(s: string): Date | null {
   if (!s || !s.trim()) return null;
   const m = s.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (!m) return null;
@@ -48,7 +50,7 @@ function parseDateIt(s: string): Date | null {
   return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
 }
 
-function parseAmount(s: string): number {
+export function parseAmount(s: string): number {
   if (!s) return 0;
   const trimmed = s.trim();
   const hasComma = trimmed.includes(",");
@@ -86,17 +88,17 @@ function normalizeType(tipologia: string): string {
   return t.replace(/\s+/g, "_");
 }
 
-function isInternal(nome: string, descrizione: string): boolean {
+export function isInternal(nome: string, descrizione: string): boolean {
   const txt = `${nome} ${descrizione}`.toLowerCase();
   return KNOWN_INTERNAL_PEERS.some((p) => txt.includes(p));
 }
 
-function isDebt(nome: string, descrizione: string): boolean {
+export function isDebt(nome: string, descrizione: string): boolean {
   const txt = `${nome} ${descrizione}`.toLowerCase();
   return DEBT_KEYWORDS.some((k) => txt.includes(k));
 }
 
-function makeHash(date: string, amount: string, merchant: string, description: string): string {
+export function makeHash(date: string, amount: string, merchant: string, description: string): string {
   const key = `${date}|${amount}|${merchant.toLowerCase()}|${description.toLowerCase().slice(0, 40)}`;
   return crypto.createHash("sha1").update(key).digest("hex").slice(0, 16);
 }

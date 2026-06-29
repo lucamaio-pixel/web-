@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseHypeCsv, statsFromTransactions } from "@/lib/hype-parser";
+import { parsePostePayCsv } from "@/lib/postepay-parser";
 import { categorize } from "@/lib/categorizer";
 import { prisma } from "@/lib/prisma";
 
@@ -23,7 +24,11 @@ export async function POST(req: NextRequest) {
     const account = await prisma.account.findUnique({ where: { id: accountId } });
     if (!account) return NextResponse.json({ error: "Conto non trovato" }, { status: 404 });
 
-    const parsed = parseHypeCsv(csvContent);
+    // PostePay/BancoPosta usano un formato diverso da Hype
+    const parsed =
+      account.type === "postepay"
+        ? parsePostePayCsv(csvContent)
+        : parseHypeCsv(csvContent);
     const stats = statsFromTransactions(parsed);
 
     // Mappa pilastri e sottocategorie
