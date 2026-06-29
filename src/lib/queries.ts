@@ -210,6 +210,38 @@ export async function getCushionStatus() {
   };
 }
 
+// Spese business (Amway/Network21) pagate dal conto cuscino nel mese:
+// violano la regola "cuscino congelato, il business si paga da solo".
+export async function getCushionBusinessSpend(month: string = currentMonth()) {
+  const cushionAccount = await prisma.account.findFirst({
+    where: { active: true, OR: [{ type: "postepay" }, { name: "PostePay" }] },
+  });
+  if (!cushionAccount) return { total: 0, count: 0 };
+
+  const businessPilastro = await prisma.pilastro.findFirst({ where: { key: "amway" } });
+  if (!businessPilastro) return { total: 0, count: 0 };
+
+  const [y, m] = month.split("-").map(Number);
+  const from = new Date(y, m - 1, 1);
+  const to = new Date(y, m, 1);
+
+  const txs = await prisma.transaction.findMany({
+    where: {
+      accountId: cushionAccount.id,
+      pilastroId: businessPilastro.id,
+      date: { gte: from, lt: to },
+      deleted: false,
+      amount: { lt: 0 },
+    },
+    select: { amount: true },
+  });
+
+  return {
+    total: txs.reduce((s, t) => s + Math.abs(t.amount), 0),
+    count: txs.length,
+  };
+}
+
 // Liquidità complessiva e "disponibile senza toccare il cuscino"
 export async function getLiquidityStatus() {
   const balances = await getAllBalances();

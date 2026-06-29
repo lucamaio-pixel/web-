@@ -4,22 +4,24 @@ import {
   getRecentTransactions,
   getLiquidityStatus,
   getLibertaStatus,
+  getCushionBusinessSpend,
 } from "@/lib/queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatEuro, formatMonth, currentMonth } from "@/lib/utils";
 import Link from "next/link";
-import { Flame, TrendingDown, ChevronRight, Shield, AlertTriangle } from "lucide-react";
+import { Flame, TrendingDown, ChevronRight, Lock, AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [pilastri, stats, recent, liquidity, liberta] = await Promise.all([
+  const [pilastri, stats, recent, liquidity, liberta, cushionBusiness] = await Promise.all([
     getPilastri(),
     getMonthlyStats(),
     getRecentTransactions(3),
     getLiquidityStatus(),
     getLibertaStatus(),
+    getCushionBusinessSpend(),
   ]);
 
   const month = currentMonth();
@@ -61,14 +63,16 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Cuscino + disponibile operativo */}
+      {/* Cuscino congelato + disponibile operativo */}
       {cushion && (
         <Card className={cushion.belowFloor ? "border-red-200 bg-red-50/60" : "border-emerald-100 bg-emerald-50/40"}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Shield className={`w-4 h-4 ${cushion.belowFloor ? "text-red-500" : "text-emerald-600"}`} />
-                <p className="text-sm font-semibold text-stone-700">Cuscino ({cushion.accountName})</p>
+                <Lock className={`w-4 h-4 ${cushion.belowFloor ? "text-red-500" : "text-emerald-600"}`} />
+                <p className="text-sm font-semibold text-stone-700">
+                  Cuscino congelato <span className="font-normal text-stone-400">({cushion.accountName})</span>
+                </p>
               </div>
               <span className={`text-sm font-bold ${cushion.belowFloor ? "text-red-600" : "text-emerald-700"}`}>
                 {formatEuro(cushion.balance)}
@@ -81,15 +85,26 @@ export default async function DashboardPage() {
             />
             <div className="flex justify-between text-xs mt-1.5">
               <span className="text-stone-400">obiettivo {formatEuro(cushion.target)}</span>
-              <span className="text-stone-400">minimo {formatEuro(cushion.floor)}</span>
+              <span className="text-stone-400">
+                {cushion.deficit > 0 ? `mancano ${formatEuro(cushion.deficit)}` : "obiettivo raggiunto"}
+              </span>
             </div>
-            {cushion.belowFloor ? (
-              <div className="flex items-start gap-1.5 mt-3 text-xs text-red-700">
+
+            {/* Allarme: spese business pagate dal cuscino */}
+            {cushionBusiness.total > 0 && (
+              <div className="flex items-start gap-1.5 mt-3 text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                 <span>
-                  Cuscino sotto il minimo. Da reintegrare: <strong>{formatEuro(cushion.target - cushion.balance)}</strong>.
+                  <strong>{formatEuro(cushionBusiness.total)}</strong> di spese business pagate dal cuscino questo mese
+                  ({cushionBusiness.count} mov.). Il business va pagato con i suoi incassi, non dal cuscino.
                 </span>
               </div>
+            )}
+
+            {cushion.belowFloor ? (
+              <p className="text-xs text-red-700 mt-3">
+                Sotto il minimo di {formatEuro(cushion.floor)} — da ricostruire.
+              </p>
             ) : (
               <p className="text-xs text-stone-500 mt-3">
                 Disponibile senza toccare il cuscino:{" "}
