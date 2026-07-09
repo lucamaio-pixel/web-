@@ -13,24 +13,24 @@ const prisma = new PrismaClient({ adapter });
 // === BUDGET PIANIFICATO ===
 // Pilastri (chiave → budget mensile)
 const PILASTRI_BUDGETS: Record<string, number> = {
-  fondamenta: 348,    // Spese Fisse Casa
+  fondamenta: 355,    // Spese Fisse Casa
   quotidiano: 780,    // Spese Quotidiane
   figli: 100,
-  amway: 80,          // Network21
-  scudo: 50,
-  imprevisti: 100,
-  respiro: 150,       // Svago
-  margine: 50,        // Spese Varie (vestiario)
-  arretrati: 120,
+  amway: 200,         // Network21 €80 + consumo casa €120 (tetto)
+  scudo: 0,           // alimentato dai €250/mese B&B
+  imprevisti: 80,
+  respiro: 120,       // Svago
+  margine: 55,        // Spese Varie (vestiario)
+  arretrati: 120,     // temporaneo, fino ad agosto
   debiti: 460,
 };
 
 // Sottocategorie (pilastroKey:subKey → budget mensile)
 const SUBCATEGORIES_BUDGETS: Record<string, number> = {
-  // Spese Fisse Casa (€348)
+  // Spese Fisse Casa (€355)
   "fondamenta:luce_gas": 110,            // bombole 60 + corrente 50
   "fondamenta:internet_telefono": 85,    // TIM 45 + SIM 40
-  "fondamenta:abbonamenti": 5,           // Amazon Prime
+  "fondamenta:abbonamenti": 12,          // Prime + vari
   "fondamenta:condominio": 50,
   "fondamenta:scuola_danza": 60,         // Danza Dalia
   "fondamenta:altro_fondamenta": 38,     // Assicurazione auto rateizzata
@@ -48,30 +48,30 @@ const SUBCATEGORIES_BUDGETS: Record<string, number> = {
   "figli:dalia": 30,
   "figli:altro_figli": 10,
 
-  // Network21 (€80)
-  "amway:prodotti": 30,
-  "amway:network21": 50,
+  // Amway/Network21 (€200 — tetto)
+  "amway:prodotti": 120,                 // consumo casa/personale
+  "amway:network21": 80,                 // strumenti business
   "amway:altro_amway": 0,
 
-  // Scudo (€50)
-  "scudo:risparmio": 50,
+  // Scudo (€0 — alimentato dal B&B)
+  "scudo:risparmio": 0,
 
-  // Imprevisti (€100) — un'unica voce
-  "imprevisti:gite_scolastiche": 30,
-  "imprevisti:regali": 30,
+  // Imprevisti (€80)
+  "imprevisti:gite_scolastiche": 20,
+  "imprevisti:regali": 20,
   "imprevisti:medico_extra": 20,
   "imprevisti:altro_imprevisti": 20,
 
-  // Svago (€150)
-  "respiro:ristoranti": 50,
-  "respiro:viaggi_gite": 60,
+  // Svago (€120)
+  "respiro:ristoranti": 40,
+  "respiro:viaggi_gite": 40,
   "respiro:svago": 30,
   "respiro:shopping_permesso": 10,
 
-  // Spese Varie (€50)
+  // Spese Varie (€55)
   "margine:vestiti": 30,
   "margine:casa_piccole": 10,
-  "margine:shopping_vario": 10,
+  "margine:shopping_vario": 15,
   "margine:altro_margine": 0,
 
   // Arretrati (€120)

@@ -16,7 +16,7 @@ const PILASTRI = [
     emoji: "🏠",
     color: "#1E293B",
     description: "Bollette, abbonamenti, condominio, telefonia, scuola/danza — spese fisse ricorrenti di casa",
-    monthlyBudget: 348,
+    monthlyBudget: 355,
     order: 1,
   },
   {
@@ -42,8 +42,8 @@ const PILASTRI = [
     name: "Network21",
     emoji: "🚀",
     color: "#F59E0B",
-    description: "Investimento business: Network21 e Amway Italia",
-    monthlyBudget: 80,
+    description: "Tetto mensile Amway/Network21: €80 business + €120 consumo casa. Eventi/stock extra solo con incassi del business",
+    monthlyBudget: 200,
     order: 4,
   },
   {
@@ -62,7 +62,7 @@ const PILASTRI = [
     emoji: "⚡",
     color: "#EAB308",
     description: "Gite scolastiche, regali, eventi non programmati",
-    monthlyBudget: 100,
+    monthlyBudget: 80,
     order: 6,
   },
   {
@@ -71,7 +71,7 @@ const PILASTRI = [
     emoji: "🌿",
     color: "#84CC16",
     description: "Ristoranti, gite in famiglia, cinema, sfizi — spese piacevoli PIANIFICATE",
-    monthlyBudget: 150,
+    monthlyBudget: 120,
     order: 7,
   },
   {
@@ -80,7 +80,7 @@ const PILASTRI = [
     emoji: "➕",
     color: "#64748B",
     description: "Vestiti, casa, prelievi contanti, tutto ciò che non rientra negli altri pilastri",
-    monthlyBudget: 50,
+    monthlyBudget: 55,
     order: 8,
   },
   {
