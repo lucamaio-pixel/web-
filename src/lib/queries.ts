@@ -187,6 +187,11 @@ async function getSetting(key: string): Promise<string | null> {
   return s?.value ?? null;
 }
 
+// Entrate operative previste dal piano (stipendio + assegni + Mileidy)
+export async function getIncomeEstimate(): Promise<number> {
+  return Number(await getSetting("monthly_income_estimate")) || 2300;
+}
+
 // Conto designato come cuscino: la PostePay
 export async function getCushionStatus() {
   const account = await prisma.account.findFirst({

@@ -101,6 +101,12 @@ const PILASTRI = [
     monthlyBudget: 460,
     order: 10,
   },
+  // Buste — accantonamenti mensili per spese periodiche (annuali/semestrali)
+  { key: "assicurazione", name: "Assicurazione auto", emoji: "🚗", color: "#0EA5E9", description: "Accantonamento mensile", monthlyBudget: 35, goalAmount: 400, order: 101 },
+  { key: "bollo", name: "Bollo auto + moto", emoji: "🧾", color: "#6366F1", description: "Accantonamento mensile", monthlyBudget: 17, goalAmount: 200, order: 102 },
+  { key: "dentista", name: "Salute / Dentista", emoji: "🦷", color: "#14B8A6", description: "Accantonamento mensile", monthlyBudget: 40, goalAmount: 480, order: 103 },
+  { key: "viaggi", name: "Viaggi / Vacanze", emoji: "✈️", color: "#F97316", description: "Accantonamento mensile", monthlyBudget: 50, goalAmount: 600, order: 104 },
+  { key: "potatura", name: "Potatura", emoji: "🌳", color: "#84CC16", description: "Accantonamento mensile", monthlyBudget: 50, goalAmount: 300, order: 105 },
 ];
 
 // Conti
